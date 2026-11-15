@@ -110,8 +110,9 @@ Skan bez Claude'a: przycisk **Skanuj** w nagłówku albo `bun run scan` (np. z H
 | Bulldogjob | skan listy ofert według technologii (pierwsze słowo frazy, np. „Kotlin”) |
 | Remotive, Himalayas | opcjonalnie: praca zdalna z zagranicy, tylko oferty otwarte dla Polski / Europy (domyślnie wyłączone) |
 | LinkedIn | **link** (Claude sam czyta publiczną stronę oferty, `add_job_links`) albo **zrzut ekranu** alertu / listy (`add_jobs`); opcjonalnie publiczna wyszukiwarka (domyślnie wyłączona) |
-| Pracuj.pl, theprotocol.it | **zrzut ekranu** oferty lub listy (`add_jobs`) – te portale blokują automaty, więc ich linki nie są pobierane |
+| Pracuj.pl, theprotocol.it, OLX | **zrzut ekranu** oferty lub listy (`add_jobs`) – te portale blokują automaty, więc ich linki nie są pobierane |
 | dowolny link | wklej go Claude'owi: „dodaj tę ofertę do Tropiciela” (`add_job_links`, dane oferty ze strony) |
+| zapisany e-mail (.eml) | alert z LinkedIna, Pracuj.pl czy OLX albo odpowiedź pracodawcy zapisana jako plik (Gmail: ⋮ → „Pobierz wiadomość”); podaj Claude'owi ścieżkę (`read_email`) – bez podłączania skrzynki |
 | Gmail (opcjonalnie) | alerty e-mail z LinkedIna i Pracuj.pl, jeśli podłączysz Gmail w Claude |
 
 Oferta ze zrzutu bez widocznego linku prowadzi do wyszukiwania; gdy później wyślesz jej link albo zrzut opisu,

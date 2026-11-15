@@ -35,8 +35,30 @@ describe("Tropiciel MCP server", () => {
   it("lists its tools", async () => {
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual(
-      ["add_job_links", "add_jobs", "compare_pay", "get_document", "get_job", "get_market_insights", "get_overview", "get_profile", "import_cv", "list_jobs", "log_events", "rate_jobs", "save_company_research", "refilter_inbox", "save_document", "save_learning_plan", "scan_portals", "update_job", "update_profile"].sort(),
+      ["add_job_links", "add_jobs", "compare_pay", "get_document", "get_job", "get_market_insights", "get_overview", "get_profile", "import_cv", "list_jobs", "log_events", "read_email", "rate_jobs", "save_company_research", "refilter_inbox", "save_document", "save_learning_plan", "scan_portals", "update_job", "update_profile"].sort(),
     );
+  });
+
+  it("reads a saved e-mail without adding anything by itself", async () => {
+    const eml = path.join(home, "alert.eml");
+    fs.writeFileSync(
+      eml,
+      [
+        "From: OLX <powiadomienia@olx.pl>",
+        "Subject: Nowe oferty pracy",
+        "Date: Sat, 14 Nov 2026 08:00:00 +0100",
+        "Content-Type: text/html; charset=utf-8",
+        "",
+        '<p><a href="https://www.olx.pl/oferta/praca/kierowca-CID4-ID1abc.html">Kierowca C+E</a> Trans-Pol, Poznań, 9000 zł</p>',
+        '<p><a href="https://www.linkedin.com/comm/jobs/view/4487000001/?trk=a">Java Dev</a></p>',
+      ].join("\r\n"),
+    );
+    const out = await call("read_email", { path: eml });
+    expect(out).toMatch(/Od: OLX <powiadomienia@olx\.pl>/);
+    expect(out).toMatch(/add_job_links:\nhttps:\/\/www\.linkedin\.com\/jobs\/view\/4487000001/);
+    expect(out).toMatch(/- ✗ Kierowca C\+E: https:\/\/www\.olx\.pl\/oferta\/praca\/kierowca-CID4-ID1abc\.html/);
+    expect(out).toMatch(/Trans-Pol, Poznań, 9000 zł/);
+    await expect(call("read_email", { path: path.join(home, "x.msg") })).rejects.toThrow(/\.eml/);
   });
 
   it("walks through profile → CV → add → rate → apply", async () => {

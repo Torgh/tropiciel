@@ -124,7 +124,7 @@ export function Today({
           {last ? `Ostatni skan ${agoTime(last.at)}: ${last.added} nowych ofert. ` : "Jeszcze nie było skanu. "}
           {data.mailCheckedAt
             ? `Odpowiedzi z Gmaila sprawdzone ${agoTime(data.mailCheckedAt)}.`
-            : "Oferty z LinkedIn i Pracuj.pl oraz odpowiedzi pracodawców: wyślij w Claude zrzut ekranu albo link."}
+            : "Oferty z LinkedIn, Pracuj.pl i OLX oraz odpowiedzi pracodawców: wyślij w Claude zrzut ekranu, link albo zapisany e-mail (.eml)."}
         </p>
 
         {demo > 0 && <DemoBanner count={demo} onRemoved={onReload} />}

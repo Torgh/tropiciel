@@ -315,7 +315,7 @@ export function linkedInJobId(url: string): string | undefined {
 }
 
 /** Portals that refuse automated requests: their offers come from the user (screenshot, pasted text), never fetched. */
-export const BLOCKED_HOSTS = /(^|\.)(pracuj\.pl|theprotocol\.it)$/i;
+export const BLOCKED_HOSTS = /(^|\.)(pracuj\.pl|theprotocol\.it|olx\.pl)$/i;
 
 const HOST_SOURCE: [RegExp, SourceId][] = [
   [/(^|\.)justjoin\.it$/i, "justjoin"],
@@ -391,7 +391,7 @@ export type LinkResult = { ok: true; job: JobInput } | { ok: false; url: string;
 /**
  * One offer from a link the user pasted: LinkedIn's public job page (one request, the same one the board makes for
  * the description), or the JobPosting data of any other job page. Portals that block automated requests
- * (Pracuj.pl, theprotocol.it) are never fetched – the user sends a screenshot instead.
+ * (Pracuj.pl, theprotocol.it, OLX) are never fetched – the user sends a screenshot instead.
  */
 export async function offerFromLink(raw: string): Promise<LinkResult> {
   let u: URL;
@@ -602,8 +602,8 @@ const himalayas: Source = {
 };
 
 /**
- * Portals the scanner searches itself. Pracuj.pl and theprotocol.it block automated requests, so their
- * offers come in through Claude (add_jobs): from e-mail alerts, or from screenshots and links the user sends.
+ * Portals the scanner searches itself. Pracuj.pl, theprotocol.it and OLX block automated requests, so their
+ * offers come in through Claude (add_jobs): from screenshots, pasted text or saved e-mail alerts the user sends.
  */
 export const SOURCE_IMPL: Partial<Record<SourceId, Source>> = { justjoin, nofluff, bulldogjob, linkedin, remotive, himalayas };
 

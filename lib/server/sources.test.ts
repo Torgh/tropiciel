@@ -77,7 +77,7 @@ describe("links the user pastes", () => {
 
   it("never fetches portals that block automated requests", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
-    for (const url of ["https://www.pracuj.pl/praca/dev,oferta,1004", "https://theprotocol.it/szczegoly/praca/x"]) {
+    for (const url of ["https://www.pracuj.pl/praca/dev,oferta,1004", "https://theprotocol.it/szczegoly/praca/x", "https://www.olx.pl/oferta/praca/kierowca-CID4-ID1abc.html"]) {
       const r = await offerFromLink(url);
       expect(r.ok).toBe(false);
       await expect(jobDescription({ url, source: "pracuj" })).rejects.toThrow(/zrzut/);

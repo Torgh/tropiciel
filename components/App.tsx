@@ -179,7 +179,7 @@ function Onboarding({ data, onScan, scanning, onSaved }: { data: BoardData; onSc
       done: !!ob.alerts,
       manual: "alerts",
       title: "Alerty e-mail na LinkedIn i Pracuj.pl",
-      body: <>Na LinkedIn: Praca → wyszukaj → „Ustaw alert” (codziennie, e-mail). Na Pracuj.pl: „Zapisz wyszukiwanie” z powiadomieniem. Nowe oferty z alertów wysyłasz Claude’owi jako zrzut ekranu albo link.</>,
+      body: <>Na LinkedIn: Praca → wyszukaj → „Ustaw alert” (codziennie, e-mail). Na Pracuj.pl: „Zapisz wyszukiwanie” z powiadomieniem. Nowe oferty z alertów wysyłasz Claude’owi jako zrzut ekranu, link albo zapisany e-mail (.eml, w Gmailu: ⋮ → „Pobierz wiadomość”).</>,
     },
     {
       done: !!data.lastScan,

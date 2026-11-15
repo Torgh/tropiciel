@@ -17,6 +17,7 @@ import { b2bEquivalent, b2bNet, formatOnHand, onHandRange, paySettings, TAX_FORM
 import { formatSalary, parseSalaryText } from "../lib/salary";
 import { saveCv } from "../lib/server/cv";
 import { pause } from "../lib/server/http";
+import { blockedLink, parseEmail } from "../lib/server/email";
 import { addJobs, scan } from "../lib/server/ingest";
 import { jobWithDescription, logEvents, patchJobs, rateJobs, refilterInbox, saveCompany, saveDocument, saveLearningPlan } from "../lib/server/jobOps";
 import { linkedInJobId, offerFromLink, searchLink } from "../lib/server/sources";
@@ -50,12 +51,14 @@ Routine ("co nowego?", run every second day or so):
 1. get_overview – what is new, unrated, and what needs a follow-up.
 2. scan_portals – Just Join IT, No Fluff Jobs and Bulldogjob (plus, if the user turned them on, LinkedIn's public search
    and the remote boards from abroad Remotive and Himalayas – only offers open to Poland / Europe), since the last scan.
-3. LinkedIn & Pracuj.pl / theprotocol.it – those portals block automated searches; never try to get around that.
-   Their offers come from the user (see "Offers from the user" below) or, only if Gmail tools are connected, from
-   their e-mail alerts since the last scan (from:jobalerts-noreply@linkedin.com OR from:jobs-listings@linkedin.com,
-   from:pracuj.pl, from:theprotocol.it): read each offer's title, company, location and link and add them with add_jobs.
+3. LinkedIn & Pracuj.pl / theprotocol.it / OLX – those portals block automated searches; never try to get around that
+   (no other user agent, no headless or remote-controlled browser clicking through their pages, also not in the user's
+   logged-in browser: LinkedIn's terms forbid bots and it can restrict the account). Their offers come from the user
+   (see "Offers from the user" below) or, only if Gmail tools are connected, from their e-mail alerts since the last
+   scan (from:jobalerts-noreply@linkedin.com OR from:jobs-listings@linkedin.com, from:pracuj.pl, from:theprotocol.it,
+   from:olx.pl): read each offer's title, company, location and link and add them with add_jobs.
    No Gmail tools? Do not suggest connecting the mailbox – the user may keep it away from the agent on purpose. Ask
-   instead for screenshots or links of new offers (LinkedIn alerts, job lists, Pracuj.pl).
+   instead for screenshots, links or saved alert e-mails (.eml files) of new offers (LinkedIn alerts, Pracuj.pl, OLX).
 4. Rate the new offers against the CV (below), then give the user a short ranked summary: the best ones first with
    one line each on why, and what you set aside. Move clear mismatches to closed (not_for_me) only if the user agrees,
    or when they asked you to triage.
@@ -64,11 +67,15 @@ Routine ("co nowego?", run every second day or so):
 
 Offers from the user (screenshots, links, pasted text) – no mailbox needed:
 - Links (LinkedIn job links, Just Join IT, No Fluff Jobs, company career pages…): add_job_links reads each one itself
-  (title, company, location, salary, description). It does not fetch Pracuj.pl / theprotocol.it: for those, and for
-  links it could not read, ask the user for a screenshot of the offer.
-- Screenshots (an e-mail alert, a LinkedIn / Pracuj.pl result list, one offer's page): read every offer visible in the
-  image – title, company, location, work mode, salary as written, skills, and the description if it is shown – and add
-  them with add_jobs (source linkedin / pracuj / protocol / other, by what the screenshot shows). Pass the url only when
+  (title, company, location, salary, description). It does not fetch Pracuj.pl / theprotocol.it / OLX: for those, and
+  for links it could not read, ask the user for a screenshot of the offer.
+- Saved e-mails (.eml – a job alert or a message from an employer; Gmail: ⋮ → "Pobierz wiadomość"): read_email with the
+  file path gives the sender, date, text and links. Alerts: LinkedIn offers → add_job_links with the links it lists;
+  other offers (Pracuj.pl, OLX, theprotocol.it…) → add_jobs from what the e-mail text says about each one, with its
+  link (it is not fetched). A message from an employer → log_events as in "Mail" (without checked_until).
+- Screenshots (an e-mail alert, a LinkedIn / Pracuj.pl / OLX result list, one offer's page): read every offer visible in
+  the image – title, company, location, work mode, salary as written, skills, and the description if it is shown – and
+  add them with add_jobs (source linkedin / pracuj / protocol / olx / other, by what the screenshot shows). Pass the url only when
   it is visible; without it the card links to a search for the offer. Only what the image shows: never guess a
   company, salary or link that is cut off or unreadable – say what you skipped. If the screenshot shows a LinkedIn
   job id or link, prefer add_job_links.
@@ -76,8 +83,8 @@ Offers from the user (screenshots, links, pasted text) – no mailbox needed:
   again with add_jobs / add_job_links – the real link replaces the search link and a missing description is filled in.
 - Then rate the new offers as in step 4.
 
-Mail – replies from employers (log_events), from Gmail tools or from screenshots of e-mails the user sends (then do
-not pass checked_until, the mailbox was not checked):
+Mail – replies from employers (log_events), from Gmail tools or from e-mails the user sends (screenshots, read_email
+of a saved .eml; then do not pass checked_until, the mailbox was not checked):
 - get_overview lists the applications to watch and the date the mailbox was last checked. Search from that date
   (minus a day) for each company's name and domain, and for recruiting systems that send on their behalf
   (greenhouse, lever, workable, teamtailor, smartrecruiters, recruitee, personio, erecruiter, pracuj.pl "Twoja aplikacja",
@@ -518,7 +525,7 @@ server.registerTool(
   "add_jobs",
   {
     title: "Add offers",
-    description: "Adds offers you read yourself: from a screenshot the user sent, pasted text, or LinkedIn / Pracuj.pl e-mail alerts. (For bare links use add_job_links.) Duplicates of cards already on the board are merged and fill in what they lack (real link, description). Offers the profile filters out are skipped unless force is true.",
+    description: "Adds offers you read yourself: from a screenshot the user sent, pasted text, or LinkedIn / Pracuj.pl / OLX e-mail alerts (read_email for a saved .eml). (For bare links use add_job_links.) Duplicates of cards already on the board are merged and fill in what they lack (real link, description). Offers the profile filters out are skipped unless force is true.",
     inputSchema: {
       jobs: z
         .array(
@@ -578,7 +585,7 @@ server.registerTool(
   {
     title: "Add offers from links",
     description:
-      "Adds offers from links the user pasted: reads each page itself (LinkedIn's public job page, or the job data other portals and career pages embed) – title, company, location, salary, description. Pracuj.pl / theprotocol.it are not fetched (they block automated requests): ask for a screenshot. Duplicates are merged; offers the profile filters out are skipped unless force is true.",
+      "Adds offers from links the user pasted: reads each page itself (LinkedIn's public job page, or the job data other portals and career pages embed) – title, company, location, salary, description. Pracuj.pl / theprotocol.it / OLX are not fetched (they block automated requests): ask for a screenshot. Duplicates are merged; offers the profile filters out are skipped unless force is true.",
     inputSchema: {
       urls: z.array(z.string()).min(1).max(20),
       force: z.boolean().optional().describe("Add even if the profile filters would skip them (the user explicitly wants them)."),
@@ -599,6 +606,37 @@ server.registerTool(
       ...r.skipped.map((s) => `– ${s.title} @ ${s.company}: ${s.reason}`),
       ...failed.map((f) => `✗ ${f.url}: ${f.reason}`),
     ].join("\n");
+  }),
+);
+
+server.registerTool(
+  "read_email",
+  {
+    title: "Read a saved e-mail",
+    description:
+      "Reads one e-mail the user saved as a file (.eml – a LinkedIn / Pracuj.pl / OLX job alert or a message from an employer): sender, date, subject, text and the links in it (LinkedIn offers as job links). Nothing is added by itself: then use add_job_links / add_jobs for offers, log_events for employer replies (without checked_until).",
+    inputSchema: { path: z.string().describe("Absolute path to the .eml file.") },
+  },
+  tool(async ({ path: p }: { path: string }) => {
+    if (/\.msg$/i.test(p)) throw new Error("plik .msg (Outlook) nie jest obsługiwany – zapisz wiadomość jako .eml albo wyślij zrzut ekranu");
+    const m = parseEmail(new Uint8Array(fs.readFileSync(p)));
+    const other = m.links.filter((l) => !m.linkedInJobs.includes(l.url));
+    return [
+      `Od: ${m.from ?? "?"}`,
+      m.to ? `Do: ${m.to}` : "",
+      `Data: ${m.date ?? "?"}`,
+      `Temat: ${m.subject ?? "(brak)"}`,
+      m.linkedInJobs.length ? `\nOferty z LinkedIna (${m.linkedInJobs.length}) – dodaj przez add_job_links:\n${m.linkedInJobs.join("\n")}` : "",
+      other.length
+        ? `\nInne linki (${other.length}, ✗ = portal blokuje pobieranie, dodaj z treści przez add_jobs):\n${other
+            .slice(0, 60)
+            .map((l) => `- ${blockedLink(l.url) ? "✗ " : ""}${l.label ? `${l.label}: ` : ""}${l.url}`)
+            .join("\n")}`
+        : "",
+      `\n## Treść\n${m.text.slice(0, 30_000) || "(pusta)"}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
   }),
 );
 

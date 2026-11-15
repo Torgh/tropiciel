@@ -7,8 +7,10 @@ Formerly JobDeck: `JOBDECK_HOME`, `~/.jobdeck` and the old localStorage keys are
 - Model: `lib/types.ts`. Board logic (dedupe key, filters, todos, ordering): `lib/jobs.ts`. Salaries: `lib/salary.ts`.
 - Portals: `lib/server/sources.ts` (Just Join IT, No Fluff Jobs APIs, Bulldogjob list page; opt-in: LinkedIn guest
   search, Remotive and Himalayas – Remotive's terms: link back, at most a few requests a day).
-  Pracuj.pl / theprotocol.it block automated requests: their offers come from the user's screenshots (Claude reads
-  them → `add_jobs`, link optional → `searchLink`) or e-mail alerts. Pasted links: `add_job_links` → `offerFromLink`
+  Pracuj.pl / theprotocol.it / OLX block automated requests (OLX: CloudFront 403): their offers come from the user's
+  screenshots (Claude reads them → `add_jobs`, link optional → `searchLink`) or e-mail alerts. Saved e-mails (.eml,
+  alerts or employer replies) → `read_email` (`lib/server/email.ts`, MIME parser, no mailbox access). No
+  remote-controlled browser clicking through portals, also not in the user's logged-in session. Pasted links: `add_job_links` → `offerFromLink`
   (LinkedIn guest job page or JSON-LD JobPosting; never fetches `BLOCKED_HOSTS`). Do not add scrapers that work
   around a portal's blocking.
 - Scan + merge: `lib/server/ingest.ts`. Every write goes through `updateDb` / `updateProfile` (cross-process lock).
